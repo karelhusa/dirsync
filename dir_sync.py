@@ -3,7 +3,7 @@ import sys
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QTreeView, QWidget, QVBoxLayout, QDirModel, QHBoxLayout, \
-    QListView, QPushButton, QLabel, QLineEdit
+    QListView, QPushButton, QLabel, QLineEdit, QMessageBox
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QIntValidator
 from shutil import copyfile, move
 from pathlib import Path
@@ -104,12 +104,22 @@ class App(QWidget):
 
     def refresh_source(self):
         self.source_model.clear()
-        for file_name in get_files(source_dir, int(self.last_days_input.text())):
-            item = QStandardItem(file_name)
-            check = Qt.Unchecked
-            item.setCheckState(check)
-            item.setCheckable(True)
-            self.source_model.appendRow(item)
+        if not os.path.exists(source_dir) or not os.path.isdir(source_dir):
+            print("Not a dir")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText("Foťák není připojen")
+            msg.setInformativeText(f"Cesta {source_dir} není dostupná, připoj foťák a zapni jej.")
+            msg.setWindowTitle("Nelze se spojit s foťákem")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+        else:
+            for file_name in get_files(source_dir, int(self.last_days_input.text())):
+                item = QStandardItem(file_name)
+                check = Qt.Unchecked
+                item.setCheckState(check)
+                item.setCheckable(True)
+                self.source_model.appendRow(item)
 
     def refresh_destination(self):
         self.destination_model.refresh()
