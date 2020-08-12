@@ -1,3 +1,4 @@
+import glob
 import sys
 
 from PyQt5 import QtWidgets
@@ -10,9 +11,6 @@ from pathlib import Path
 import datetime as dt
 
 import os
-
-destination_dir = 'C:\\Users\\Karel\\Desktop\\dest'
-source_dir = 'C:\\Users\\Karel\\Desktop\\source'
 
 
 def get_files(dir, last_days=1):
@@ -35,6 +33,9 @@ class App(QWidget):
         self.top = 30
         self.width = 940
         self.height = 680
+        self.destination_dir = 'C:\\Users\\Karel\\Desktop\\dest'
+        self.source_dir_pattern = 'C:\\Users\\K*\\Desktop\\source*'
+        self.source_dir = "Nenastaven"
         self.initUI()
 
     def initUI(self):
@@ -46,7 +47,7 @@ class App(QWidget):
         self.destination_view.setSortingEnabled(True)
         self.destination_view.sortByColumn(0, Qt.AscendingOrder)
         self.destination_view.setModel(self.destination_model)
-        self.destination_view.setRootIndex(self.destination_model.index(destination_dir))
+        self.destination_view.setRootIndex(self.destination_model.index(self.destination_dir))
 
         self.source_model = QStandardItemModel()
         self.source_view = QListView()
@@ -104,22 +105,29 @@ class App(QWidget):
 
     def refresh_source(self):
         self.source_model.clear()
-        if not os.path.exists(source_dir) or not os.path.isdir(source_dir):
-            print("Not a dir")
+        self.check_source_dir()
+        if not os.path.exists(self.source_dir) or not os.path.isdir(self.source_dir):
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
             msg.setText("Foťák není připojen")
-            msg.setInformativeText(f"Cesta {source_dir} není dostupná, připoj foťák a zapni jej.")
+            msg.setInformativeText(f"Cesta {self.source_dir_pattern} není dostupná, připoj foťák a zapni jej.")
             msg.setWindowTitle("Nelze se spojit s foťákem")
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec_()
         else:
-            for file_name in get_files(source_dir, int(self.last_days_input.text())):
+            for file_name in get_files(self.source_dir, int(self.last_days_input.text())):
                 item = QStandardItem(file_name)
                 check = Qt.Unchecked
                 item.setCheckState(check)
                 item.setCheckable(True)
                 self.source_model.appendRow(item)
+
+    def check_source_dir(self):
+        dirs = glob.glob(self.source_dir_pattern)
+        if len(dirs) >= 1:
+            self.source_dir = dirs[0]
+        else:
+            self.source_dir = "Nedostupny"
 
     def refresh_destination(self):
         self.destination_model.refresh()
@@ -127,14 +135,14 @@ class App(QWidget):
     def copy_files(self):
         for file in self.selected_files():
             print(file)
-            copyfile(os.path.join(source_dir, file), os.path.join(self.dest_dir(), file))
+            copyfile(os.path.join(self.source_dir, file), os.path.join(self.dest_dir(), file))
         self.refresh_source()
         self.refresh_destination()
 
     def move_files(self):
         for file in self.selected_files():
             print(file)
-            move(os.path.join(source_dir, file), os.path.join(self.dest_dir(), file))
+            move(os.path.join(self.source_dir, file), os.path.join(self.dest_dir(), file))
         self.refresh_source()
         self.refresh_destination()
 
@@ -142,15 +150,15 @@ class App(QWidget):
         name = self.new_directory.text().strip()
         print("Creating dir ", name)
         if name:
-            Path(os.path.join(destination_dir, name)).mkdir(parents=True, exist_ok=True)
+            Path(os.path.join(self.destination_dir, name)).mkdir(parents=True, exist_ok=True)
         self.refresh_destination()
 
     def dest_dir(self):
         index = self.destination_view.currentIndex()
         if index.isValid() and self.destination_model.isDir(index):
-            return os.path.join(destination_dir, self.destination_model.fileName(index))
+            return os.path.join(self.destination_dir, self.destination_model.fileName(index))
         else:
-            return destination_dir
+            return self.destination_dir
 
 
 if __name__ == '__main__':
