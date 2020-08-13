@@ -57,6 +57,7 @@ class App(QWidget):
 
         self.last_days_input = QLineEdit(str(1))
         self.last_days_input.setValidator(QIntValidator())
+        self.last_days_input.editingFinished.connect(self.refresh_source)
         self.refresh_button = QPushButton("Obnovit")
         self.refresh_button.clicked.connect(self.refresh_source)
 
